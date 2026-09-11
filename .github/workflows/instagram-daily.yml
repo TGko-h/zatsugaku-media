@@ -1,0 +1,36 @@
+name: Instagram daily post（聞いてないけど雑学）
+
+on:
+  schedule:
+    - cron: '0 9 * * *' # 毎日 09:00 UTC = 18:00 JST（GitHubの混雑で数分〜十数分遅れることがある）
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'dry-run（公開しない。鍵とキューの確認だけ）'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: instagram-daily
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Publish next reel
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          IG_TOKEN_EXPIRES: ${{ vars.IG_TOKEN_EXPIRES }}
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/publish-next.mjs ${{ inputs.dry_run && '--dry-run' || '' }}
